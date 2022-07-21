@@ -1,0 +1,7 @@
+member_casual,rideable_type,number_of_riders
+casual,classic_bike,913462
+casual,docked_bike,536912
+casual,electric_bike,739137
+member,classic_bike,1342807
+member,docked_bike,490865
+member,electric_bike,805190

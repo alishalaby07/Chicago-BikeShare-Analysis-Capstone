@@ -1,0 +1,212 @@
+---
+title: "BikeShare Analysis"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+## 1. Load packages
+
+```{r}
+library(tidyverse)
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+2.  Read in data and merge tables
+
+```{r, 'results=hide'}
+setwd("/Users/alishalaby/MyDocuments/Project Portfolio/BikeShareAnalysis/Data")
+
+bike_data <- rbind(
+  read_csv("202009-divvy-tripdata.csv"), 
+  read_csv("202010-divvy-tripdata.csv"),
+  read_csv("202011-divvy-tripdata.csv"),
+  read_csv("202012-divvy-tripdata.csv"),
+  read_csv("202101-divvy-tripdata.csv"),
+  read_csv("202102-divvy-tripdata.csv"),
+  read_csv("202103-divvy-tripdata.csv"),
+  read_csv("202104-divvy-tripdata.csv"),
+  read_csv("202105-divvy-tripdata.csv"),
+  read_csv("202106-divvy-tripdata.csv"),
+  read_csv("202107-divvy-tripdata.csv"),
+  read_csv("202108-divvy-tripdata.csv"))
+```
+
+## 2. Process Data
+
+3.  Understand data structure
+
+```{r}
+head(bike_data)
+str(bike_data)
+```
+
+4.  Check NA values
+
+```{r}
+sum(is.na(bike_data)) #total number of NA values
+bike_data %>% summarise_all(~ sum(is.na(.))) #number of NA values per column
+```
+
+Evident that most na values are contained in station-based: 1. start_station_name 2. start_station_id 3. end_station_name 4. end_station_id We should leave the data as is and not replace NA values
+
+5.  Drop 'lat' and 'long' columns
+
+```{r}
+bike_data <- bike_data %>% 
+  select(-c(start_lat, start_lng, end_lat, end_lng))
+```
+
+6.  Add columns 'weekday', 'ride_length' and 'month'
+
+```{r}
+bike_data <- 
+  bike_data %>% 
+  mutate(weekday = weekdays(as.Date(bike_data$started_at))) %>%
+  mutate(ride_length = ended_at - started_at) %>% 
+  mutate(month = months(as.Date(bike_data$started_at)))
+```
+
+7.  Convert 'ride_length' to minutes from second
+
+```{r}
+glimpse(bike_data$ride_length)
+bike_data$ride_length <- as.numeric(bike_data$ride_length)
+bike_data$ride_length <- as.numeric(bike_data$ride_length/60)
+```
+
+8.  Filter 'bad' data
+
+```{r}
+bike_data <- bike_data %>%
+  filter(ride_length >1) %>% #bikes with more than 1 min of use
+  filter(ride_length <= 1440) # bikes atleast 1 day of use
+```
+
+## 3. Analyze
+
+9.  Summary statistics
+
+```{r}
+summary(bike_data$ride_length) 
+```
+
+10. Aggregate data based on casual vs member riders
+
+```{r}
+bike_data %>% 
+  group_by(member_casual) %>% 
+  summarise(number_of_riders = n(), 
+            mean = mean(ride_length),
+            median = median(ride_length))
+```
+
+11. Average ride time day of the week members vs casuals
+
+```{r}
+rider_weekday <- bike_data %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(average_ride_length = mean(ride_length), number_of_rides = n())
+  
+rider_weekday$weekday <- factor(rider_weekday$weekday, levels= c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+rider_weekday <- rider_weekday[order(rider_weekday$weekday),]
+```
+
+12. Analyze ridership data by type of vehicle
+
+```{r}
+bike_type <- bike_data %>%
+  group_by(member_casual, rideable_type) %>%
+  summarise(number_of_riders = n())
+```
+
+13. Analyze station data
+
+```{r}
+station_data <- bike_data %>% 
+  group_by(member_casual, start_station_name) %>%
+  summarise(number_of_stations = n()) %>% 
+  arrange(desc(number_of_stations))
+
+station_data <- station_data %>%
+  rename(station_name = start_station_name)
+  
+```
+
+14. Analyze ride_length by month
+
+```{r}
+rider_month <- bike_data %>% 
+  group_by(member_casual, month) %>%
+  summarise(number_of_rides = n(), average_ride_length = mean(ride_length))
+
+rider_month$month <- factor(rider_month$month, levels= c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"))
+rider_month <- rider_month[order(rider_month$month),]
+
+```
+
+## 4. Visualize
+
+15. Visualize ridership distribution
+
+```{r}
+bike_data %>%
+  group_by(member_casual) %>%
+  summarize(number_of_rides = n()) %>%
+  ggplot(aes(x="", y=number_of_rides, fill=member_casual)) +
+  geom_col() + labs(title="Number of rides", x="", y="") +
+  geom_text(aes(label = number_of_rides), position = position_stack(vjust = 0.5)) +
+  coord_polar("y") 
+```
+
+15. Visualize weekly ridership
+
+```{r}
+rider_weekday %>%
+  ggplot(aes(x=weekday, y=number_of_rides, fill=member_casual)) +
+  geom_col(position="dodge") + 
+  labs(title="Weekly Ridership", x="Week", y="Number of Rides", fill="User Type") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+16. Visualize weekly average ride length
+
+```{r}
+rider_weekday %>% 
+  ggplot(aes(x=weekday, y=average_ride_length, fill=member_casual)) + 
+  geom_col() +
+  labs(title="Average Weekly Ride Length", x="Week", y="Average Ride Length", fill="User Type") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+17. Visualize monthly ridership
+
+```{r}
+rider_month %>%
+  ggplot(aes(x=month, y=number_of_rides, fill=member_casual)) +
+  geom_col(position="dodge") + 
+  labs(title="Monthly Ridership", x="Month", y="Number of Rides", fill="User Type") + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+## 5. Export
+
+18. 
+
+```{r}
+# Get total riders and bike types in order to visualize on Tableau
+total_riders <- data.frame(table(bike_data$member_casual))
+total_types <- data.frame(table(bike_data$rideable_type))
+
+write_csv(total_riders, "total_riders.csv")
+write_csv(total_types, "total_types.csv")
+write_csv(station_data, "station_data.csv")
+write_csv(bike_data, "bike_data.csv")
+write_csv(bike_type, "bike_type.csv")
+write_csv(rider_month, "rider_month.csv")
+write_csv(rider_weekday, "rider_weekday.csv")
+
+```
