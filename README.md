@@ -109,4 +109,26 @@ rider_weekday %>%
 
 :rotating_light: For complete analysis and visualization code chunks, view the [rmd file](https://github.com/alishalaby07/Chicago-BikeShare-Analysis-Capstone/blob/main/BikeShareAnalysis.Rmd) attached here.
 
+## 5. Share
+
+:art:[***Tableau Dashboard on Cyclistic Analysis***](https://public.tableau.com/app/profile/ali.shalaby/viz/BikeShareDashboard_16583710588640/Dashboard1)
+
+<img src="https://user-images.githubusercontent.com/83675013/180580306-0671aa83-a379-4ee2-8bb4-8b8c8aeed2e0.jpeg" width="500" height="500" />
+
+## 6. Act 
+
+***Revisit Business Tasks***: Discover how casual riders and Cyclistic members use their rental bikes differently.
+
+***Findings***
+- Casual riders ride more than members during the summer
+- Casual riders ride more than members during the weekend
+- Casual riders take more rides on docked bikes than members
+- During the week and when it is not summer, members ride significantly more than casual riders
+- Popular stations for casual riders: Streeter Dr & Grand Ave, Lake Shore Dr & Monroe St, Millennium Park.
+
+***Recommendations***
+- Market on the top 5 most popular stations for the causal riders in order to find high frequency casual users.
+- Promotional short term membership offer during the summer.
+- Promotional weekend term membership 
+
 
